@@ -1,0 +1,7 @@
+
+DUT=binary,W=4,ALG=dadda,SIGN=unsigned,PIPE=0,PASS=1
+GRADE,1
+DUT=binary,W=4,ALG=dadda,SIGN=signed,PIPE=0,PASS=1
+GRADE,1
+DUT=booth,W=4,ALG=dadda,SIGN=signed,PIPE=0,PASS=0
+GRADE,0

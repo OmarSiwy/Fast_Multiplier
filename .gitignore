@@ -1,0 +1,7 @@
+*.class
+**/*.hex
+data/**/*.hex
+data/tests/
+.build_cache/
+
+**/__pycache__/**
