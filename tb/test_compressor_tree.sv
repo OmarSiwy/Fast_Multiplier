@@ -64,7 +64,7 @@ module top (
     logic cpl_mem[NUM_CPL * TESTS];
 
     // Current partial products for DUT
-    logic [NUM_PP-1:0][PP_WIDTH-1:0] pp_packed;
+    logic [PP_WIDTH-1:0] pp_packed[NUM_PP-1:0];
     logic [PROD_W-1:0] sum;
     logic [PROD_W-1:0] carry;
     logic [PROD_W-1:0] product;
