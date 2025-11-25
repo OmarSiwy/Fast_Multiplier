@@ -14,12 +14,11 @@ module compressor_tree #(
 )(
     input logic clk,
     input logic rst,
-    input logic [3:0][3:0] pp,
+    input logic [3:0] pp [3:0],
     output logic [7:0] sum,
     output logic [7:0] carry
 );
-
-    parameter COMPRESSOR_TREE_STAGES = 0;
+    localparam int COMPRESSOR_TREE_STAGES = PIPE ? 2 : 0;
 
     // FA and HA output wires
     logic fa_s0_c2_n0_s, fa_s0_c2_n0_c;
@@ -59,22 +58,26 @@ module compressor_tree #(
     logic [1:0] stage2_col6;
 
     // Stage 0: Partial Product Assignment
-    assign stage0_col0[0] = pp[0][0];
-    assign stage0_col1[0] = pp[0][1];
-    assign stage0_col1[1] = pp[1][0];
-    assign stage0_col2[0] = pp[0][2];
-    assign stage0_col2[1] = pp[1][1];
-    assign stage0_col2[2] = pp[2][0];
-    assign stage0_col3[0] = pp[0][3];
-    assign stage0_col3[1] = pp[1][2];
-    assign stage0_col3[2] = pp[2][1];
-    assign stage0_col3[3] = pp[3][0];
-    assign stage0_col4[0] = pp[1][3];
-    assign stage0_col4[1] = pp[2][2];
-    assign stage0_col4[2] = pp[3][1];
-    assign stage0_col5[0] = pp[2][3];
-    assign stage0_col5[1] = pp[3][2];
-    assign stage0_col6[0] = pp[3][3];
+    // Combinational assignment
+    always_comb begin
+        stage0_col0[0] = pp[0][0];
+        stage0_col1[0] = pp[0][1];
+        stage0_col1[1] = pp[1][0];
+        stage0_col2[0] = pp[0][2];
+        stage0_col2[1] = pp[1][1];
+        stage0_col2[2] = pp[2][0];
+        stage0_col3[0] = pp[0][3];
+        stage0_col3[1] = pp[1][2];
+        stage0_col3[2] = pp[2][1];
+        stage0_col3[3] = pp[3][0];
+        stage0_col4[0] = pp[1][3];
+        stage0_col4[1] = pp[2][2];
+        stage0_col4[2] = pp[3][1];
+        stage0_col5[0] = pp[2][3];
+        stage0_col5[1] = pp[3][2];
+        stage0_col6[0] = pp[3][3];
+    end
+
 
     // Stage 1: Reduction
     fa fa_s0_c2_n0 (
@@ -109,19 +112,60 @@ module compressor_tree #(
     );
 
     // Map to Stage 1 columns
-    assign stage1_col0[0] = stage0_col0[0];
-    assign stage1_col1[0] = ha_s0_c1_n0_s;
-    assign stage1_col2[0] = ha_s0_c1_n0_c;
-    assign stage1_col2[1] = fa_s0_c2_n0_s;
-    assign stage1_col3[0] = fa_s0_c2_n0_c;
-    assign stage1_col3[1] = fa_s0_c3_n1_s;
-    assign stage1_col3[2] = stage0_col3[3];
-    assign stage1_col4[0] = fa_s0_c3_n1_c;
-    assign stage1_col4[1] = fa_s0_c4_n2_s;
-    assign stage1_col5[0] = fa_s0_c4_n2_c;
-    assign stage1_col5[1] = stage0_col5[0];
-    assign stage1_col5[2] = stage0_col5[1];
-    assign stage1_col6[0] = stage0_col6[0];
+    generate
+        if (PIPE) begin : gen_stage1_pipe
+            always_ff @(posedge clk) begin
+                if (rst) begin
+                    // Reset logic here
+                    stage1_col0[0] <= 1'b0;
+                    stage1_col1[0] <= 1'b0;
+                    stage1_col2[0] <= 1'b0;
+                    stage1_col2[1] <= 1'b0;
+                    stage1_col3[0] <= 1'b0;
+                    stage1_col3[1] <= 1'b0;
+                    stage1_col3[2] <= 1'b0;
+                    stage1_col4[0] <= 1'b0;
+                    stage1_col4[1] <= 1'b0;
+                    stage1_col5[0] <= 1'b0;
+                    stage1_col5[1] <= 1'b0;
+                    stage1_col5[2] <= 1'b0;
+                    stage1_col6[0] <= 1'b0;
+                end else begin
+                    // Normal operation logic here
+                    stage1_col0[0] <= stage0_col0[0];
+                    stage1_col1[0] <= ha_s0_c1_n0_s;
+                    stage1_col2[0] <= ha_s0_c1_n0_c;
+                    stage1_col2[1] <= fa_s0_c2_n0_s;
+                    stage1_col3[0] <= fa_s0_c2_n0_c;
+                    stage1_col3[1] <= fa_s0_c3_n1_s;
+                    stage1_col3[2] <= stage0_col3[3];
+                    stage1_col4[0] <= fa_s0_c3_n1_c;
+                    stage1_col4[1] <= fa_s0_c4_n2_s;
+                    stage1_col5[0] <= fa_s0_c4_n2_c;
+                    stage1_col5[1] <= stage0_col5[0];
+                    stage1_col5[2] <= stage0_col5[1];
+                    stage1_col6[0] <= stage0_col6[0];
+                end
+            end
+        end else begin : gen_stage1_no_pipe
+            // Combinational assignment
+            always_comb begin
+                stage1_col0[0] = stage0_col0[0];
+                stage1_col1[0] = ha_s0_c1_n0_s;
+                stage1_col2[0] = ha_s0_c1_n0_c;
+                stage1_col2[1] = fa_s0_c2_n0_s;
+                stage1_col3[0] = fa_s0_c2_n0_c;
+                stage1_col3[1] = fa_s0_c3_n1_s;
+                stage1_col3[2] = stage0_col3[3];
+                stage1_col4[0] = fa_s0_c3_n1_c;
+                stage1_col4[1] = fa_s0_c4_n2_s;
+                stage1_col5[0] = fa_s0_c4_n2_c;
+                stage1_col5[1] = stage0_col5[0];
+                stage1_col5[2] = stage0_col5[1];
+                stage1_col6[0] = stage0_col6[0];
+            end
+        end
+    endgenerate
 
     // Stage 2: Reduction
     fa fa_s1_c3_n0 (
@@ -155,17 +199,54 @@ module compressor_tree #(
     );
 
     // Map to Stage 2 columns
-    assign stage2_col0[0] = stage1_col0[0];
-    assign stage2_col1[0] = stage1_col1[0];
-    assign stage2_col2[0] = ha_s1_c2_n0_s;
-    assign stage2_col3[0] = ha_s1_c2_n0_c;
-    assign stage2_col3[1] = fa_s1_c3_n0_s;
-    assign stage2_col4[0] = fa_s1_c3_n0_c;
-    assign stage2_col4[1] = ha_s1_c4_n1_s;
-    assign stage2_col5[0] = ha_s1_c4_n1_c;
-    assign stage2_col5[1] = fa_s1_c5_n1_s;
-    assign stage2_col6[0] = fa_s1_c5_n1_c;
-    assign stage2_col6[1] = stage1_col6[0];
+    generate
+        if (PIPE) begin : gen_stage2_pipe
+            always_ff @(posedge clk) begin
+                if (rst) begin
+                    // Reset logic here
+                    stage2_col0[0] <= 1'b0;
+                    stage2_col1[0] <= 1'b0;
+                    stage2_col2[0] <= 1'b0;
+                    stage2_col3[0] <= 1'b0;
+                    stage2_col3[1] <= 1'b0;
+                    stage2_col4[0] <= 1'b0;
+                    stage2_col4[1] <= 1'b0;
+                    stage2_col5[0] <= 1'b0;
+                    stage2_col5[1] <= 1'b0;
+                    stage2_col6[0] <= 1'b0;
+                    stage2_col6[1] <= 1'b0;
+                end else begin
+                    // Normal operation logic here
+                    stage2_col0[0] <= stage1_col0[0];
+                    stage2_col1[0] <= stage1_col1[0];
+                    stage2_col2[0] <= ha_s1_c2_n0_s;
+                    stage2_col3[0] <= ha_s1_c2_n0_c;
+                    stage2_col3[1] <= fa_s1_c3_n0_s;
+                    stage2_col4[0] <= fa_s1_c3_n0_c;
+                    stage2_col4[1] <= ha_s1_c4_n1_s;
+                    stage2_col5[0] <= ha_s1_c4_n1_c;
+                    stage2_col5[1] <= fa_s1_c5_n1_s;
+                    stage2_col6[0] <= fa_s1_c5_n1_c;
+                    stage2_col6[1] <= stage1_col6[0];
+                end
+            end
+        end else begin : gen_stage2_no_pipe
+            // Combinational assignment
+            always_comb begin
+                stage2_col0[0] = stage1_col0[0];
+                stage2_col1[0] = stage1_col1[0];
+                stage2_col2[0] = ha_s1_c2_n0_s;
+                stage2_col3[0] = ha_s1_c2_n0_c;
+                stage2_col3[1] = fa_s1_c3_n0_s;
+                stage2_col4[0] = fa_s1_c3_n0_c;
+                stage2_col4[1] = ha_s1_c4_n1_s;
+                stage2_col5[0] = ha_s1_c4_n1_c;
+                stage2_col5[1] = fa_s1_c5_n1_s;
+                stage2_col6[0] = fa_s1_c5_n1_c;
+                stage2_col6[1] = stage1_col6[0];
+            end
+        end
+    endgenerate
 
     // Final outputs (sum and carry)
     assign sum[0] = stage2_col0[0];

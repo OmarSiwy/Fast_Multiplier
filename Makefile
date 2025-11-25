@@ -1,6 +1,10 @@
 # Default DUT if not specified
 DUT ?= rca
 PIPE ?= 0
+M ?= 0
+W ?= 0
+TYPE ?= null
+ENCODING ?=
 
 TEST_FILE = tb/test.cpp
 LOG_SUFFIX = $(DUT)
@@ -20,6 +24,7 @@ ifeq ($(DUT),$(filter $(DUT),$(ADDER_DUTS)))
 else
   # For other DUTs, use DUT-specific testbench
   TEST_SV = tb/test_$(DUT).sv
+  VFLAGS += -DTOPNAME=$(DUT) -DENCODING="\"$(ENCODING)\"" -DM=$(M)
 endif
 
 SIM_DIR = /tmp/$(USER)/sim/
@@ -57,8 +62,8 @@ compile: $(SRC) $(TEST_FILE)
 
 run: compile
 	echo "Verilator Running Test for $(DUT)"
-	cd $(SIM_DIR) && ./V$(TOP) > log.csv
-	cat $(SIM_DIR)/log.csv
+	cd $(SIM_DIR) && ./V$(TOP) > $(SIM_DIR)log.csv
+	cat $(SIM_DIR)log.csv
 
 asic-run:
 	make asic DUT=rca W=16 PIPE=0
@@ -66,11 +71,27 @@ asic-run:
 
 asic:
 	cd asic; dc_shell-xg-t -f asic-synth.tcl -x $(ASIC_STR); innovus -64 -no_gui -execute $(ASIC_STR) -files asic-par.tcl; cd ..
-	cp asic/asic-post-par-area.$(DUT).$(W).$(M).$(PIPE).rpt asic/asic-post-par-area.$(DUT).golden.$(W).$(M).$(PIPE).rpt
+
+asic-type:
+	cd asic; dc_shell-xg-t -f asic-synth.tcl -x $(ASIC_STR); innovus -64 -no_gui -execute $(ASIC_STR) -files asic-par.tcl; cd ..
 
 
 .PHONY: clean asic
 
 clean:
 	rm -rf sim
+	rm -rf data/*.hex
+	rm -rf __pycache__/
 	rm -f log.csv times.csv
+	rm -rf asic/*.log*
+	rm -rf asic/*.cmd*
+	rm -rf asic/post-synth*
+	rm -rf asic/*.geom.rpt
+	rm -rf asic/*.conn.rpt
+	rm -rf asic/*.pvl
+	rm -rf asic/*.gds
+	rm -rf asic/*.ddc
+	rm -rf asic/*.namemap
+	rm -rf asic/*.old
+	rm -rf asic/*.cksum
+	rm -rf asic/*.v

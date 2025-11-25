@@ -61,7 +61,7 @@ class VerilogGenerator:
         return lines
 
     def _generate_module_declaration(self):
-        """Generate module declaration with ports - USES PACKED 2D ARRAYS"""
+        """Generate module declaration with ports"""
         lines = [
             f"module compressor_tree #(",
             f"    parameter PIPE = 0",
@@ -71,16 +71,16 @@ class VerilogGenerator:
         ]
 
         if self.encoding == "booth":
-            lines.append(f"    input logic [{self.num_pp-1}:0][{self.w}:0] pp,")
+            lines.append(f"    input logic [{self.w}:0] pp [{self.num_pp-1}:0],")
         else:
-            lines.append(f"    input logic [{self.num_pp-1}:0][{self.w-1}:0] pp,")
+            lines.append(f"    input logic [{self.w-1}:0] pp [{self.num_pp-1}:0],")
 
         if self.encoding == "booth":
             lines.append(f"    /* verilator lint_off ASCRANGE */")
             if self.unsigned:
-                lines.append(f"    input logic [0:{self.num_pp-2}] cpl,")
+                lines.append(f"    input logic [{self.num_pp-2}:0] cpl,")
             else:
-                lines.append(f"    input logic [0:{self.num_pp-1}] cpl,")
+                lines.append(f"    input logic [{self.num_pp-1}:0] cpl,")
             lines.append(f"    /* verilator lint_on ASCRANGE */")
 
         lines.extend(
@@ -88,15 +88,8 @@ class VerilogGenerator:
                 f"    output logic [{self.prod_width-1}:0] sum,",
                 f"    output logic [{self.prod_width-1}:0] carry",
                 ");",
-                "",
-            ]
-        )
-
-        # Damir Change to support pipeling
-        lines.extend(
-            [
-                f"    parameter COMPRESSOR_TREE_STAGES = {self.gen.compressor_tree_stages};",
-                "",
+                ""
+                f"    localparam int COMPRESSOR_TREE_STAGES = PIPE ? {self.num_stages} : 0;\n",
             ]
         )
 
@@ -145,17 +138,18 @@ class VerilogGenerator:
         """Generate Stage 0 partial product assignments"""
         lines = ["    // Stage 0: Partial Product Assignment"]
         stage0_heap = self.stages[0]
-
+        lines.append("    // Combinational assignment")
+        lines.append("    always_comb begin")
         for col in range(self.prod_width):
             for bit_idx, (bit_name, bit_type) in enumerate(stage0_heap.heap[col]):
                 if bit_type == "inverted_msb":
-                    lines.append(
-                        f"    assign stage0_col{col}[{bit_idx}] = ~{bit_name};"
-                    )
+                    lines.append(f"        stage0_col{col}[{bit_idx}] = ~{bit_name};")
                 elif bit_type == "correction" or "1'b1" in bit_name:
-                    lines.append(f"    assign stage0_col{col}[{bit_idx}] = 1'b1;")
+                    lines.append(f"        stage0_col{col}[{bit_idx}] = 1'b1;")
                 else:
-                    lines.append(f"    assign stage0_col{col}[{bit_idx}] = {bit_name};")
+                    lines.append(f"        stage0_col{col}[{bit_idx}] = {bit_name};")
+        lines.append("    end")
+        lines.append("")
 
         lines.append("")
         return lines
@@ -254,17 +248,29 @@ class VerilogGenerator:
 
         next_heap = self.stages[stage_idx + 1]
         prev_heap = self.stages[stage_idx]
-
+        lines.append("    generate")
+        lines.append(f"        if (PIPE) begin : gen_stage{stage_idx + 1}_pipe")
+        lines.append("            always_ff @(posedge clk) begin")
+        lines.append("                if (rst) begin")
+        lines.append("                    // Reset logic here")
         for col in range(self.prod_width):
             next_col_bits = next_heap.heap[col]
 
+            for bit_idx, (bit_name, bit_type) in enumerate(next_col_bits):
+                lines.append(
+                    f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= 1'b0;"
+                )
+        lines.append("                end else begin")
+        lines.append("                    // Normal operation logic here")
+        for col in range(self.prod_width):
+            next_col_bits = next_heap.heap[col]
             for bit_idx, (bit_name, bit_type) in enumerate(next_col_bits):
                 if bit_type in ["fa_sum", "fa_carry", "ha_sum", "ha_carry"]:
                     # This is an FA/HA output - check if it's from the current stage
                     if f"_s{stage_idx}_" in bit_name:
                         # New output from THIS stage - use wire directly
                         lines.append(
-                            f"    assign stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                            f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= {bit_name};"
                         )
                     else:
                         # FA/HA output from a previous stage that passed through
@@ -275,7 +281,7 @@ class VerilogGenerator:
                         ):
                             if prev_bit_name == bit_name:
                                 lines.append(
-                                    f"    assign stage{stage_idx + 1}_col{col}[{bit_idx}] = stage{stage_idx}_col{col}[{prev_bit_idx}];"
+                                    f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= stage{stage_idx}_col{col}[{prev_bit_idx}];"
                                 )
                                 found = True
                                 break
@@ -283,7 +289,7 @@ class VerilogGenerator:
                         if not found:
                             # Shouldn't happen - fallback
                             lines.append(
-                                f"    assign stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                                f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= {bit_name};"
                             )
                 else:
                     # Passthrough bit - it MUST exist in the previous stage
@@ -293,7 +299,7 @@ class VerilogGenerator:
                     ):
                         if prev_bit_name == bit_name:
                             lines.append(
-                                f"    assign stage{stage_idx + 1}_col{col}[{bit_idx}] = stage{stage_idx}_col{col}[{prev_bit_idx}];"
+                                f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= stage{stage_idx}_col{col}[{prev_bit_idx}];"
                             )
                             found = True
                             break
@@ -304,9 +310,66 @@ class VerilogGenerator:
                             f"WARNING: Bit {bit_name} not found in stage {stage_idx} column {col}"
                         )
                         lines.append(
-                            f"    assign stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                            f"                    stage{stage_idx + 1}_col{col}[{bit_idx}] <= {bit_name};"
                         )
+        lines.append("                end")
+        lines.append("            end")
+        lines.append(f"        end else begin : gen_stage{stage_idx + 1}_no_pipe")
+        lines.append("            // Combinational assignment")
+        lines.append("            always_comb begin")
+        for col in range(self.prod_width):
+            next_col_bits = next_heap.heap[col]
+            for bit_idx, (bit_name, bit_type) in enumerate(next_col_bits):
+                if bit_type in ["fa_sum", "fa_carry", "ha_sum", "ha_carry"]:
+                    # This is an FA/HA output - check if it's from the current stage
+                    if f"_s{stage_idx}_" in bit_name:
+                        # New output from THIS stage - use wire directly
+                        lines.append(
+                            f"                stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                        )
+                    else:
+                        # FA/HA output from a previous stage that passed through
+                        # It must exist in the previous stage's column
+                        found = False
+                        for prev_bit_idx, (prev_bit_name, prev_bit_type) in enumerate(
+                            prev_heap.heap[col]
+                        ):
+                            if prev_bit_name == bit_name:
+                                lines.append(
+                                    f"                stage{stage_idx + 1}_col{col}[{bit_idx}] = stage{stage_idx}_col{col}[{prev_bit_idx}];"
+                                )
+                                found = True
+                                break
 
+                        if not found:
+                            # Shouldn't happen - fallback
+                            lines.append(
+                                f"                stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                            )
+                else:
+                    # Passthrough bit - it MUST exist in the previous stage
+                    found = False
+                    for prev_bit_idx, (prev_bit_name, prev_bit_type) in enumerate(
+                        prev_heap.heap[col]
+                    ):
+                        if prev_bit_name == bit_name:
+                            lines.append(
+                                f"                stage{stage_idx + 1}_col{col}[{bit_idx}] = stage{stage_idx}_col{col}[{prev_bit_idx}];"
+                            )
+                            found = True
+                            break
+
+                    if not found:
+                        # This shouldn't happen with proper heap tracking
+                        print(
+                            f"WARNING: Bit {bit_name} not found in stage {stage_idx} column {col}"
+                        )
+                        lines.append(
+                            f"                stage{stage_idx + 1}_col{col}[{bit_idx}] = {bit_name};"
+                        )
+        lines.append("            end")
+        lines.append("        end")
+        lines.append("    endgenerate")
         lines.append("")
         return lines
 
@@ -331,6 +394,15 @@ class VerilogGenerator:
                 lines.append(f"    assign carry[{col}] = 1'b0;")
             elif len(bits) == 1:
                 lines.append(f"    assign sum[{col}] = stage{final_stage}_col{col}[0];")
+                lines.append(f"    assign carry[{col}] = 1'b0;")
+            elif len(bits) > 2:
+                print(
+                    f"ERROR: Final stage column {col} has more than 2 bits ({len(bits)} bits)."
+                )
+                lines.append(
+                    f"    // ERROR: More than 2 bits in final stage column {col}"
+                )
+                lines.append(f"    assign sum[{col}] = ^(stage{final_stage}_col{col});")
                 lines.append(f"    assign carry[{col}] = 1'b0;")
             else:  # len(bits) == 2
                 lines.append(f"    assign sum[{col}] = stage{final_stage}_col{col}[0];")

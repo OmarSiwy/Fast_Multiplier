@@ -1,6 +1,6 @@
 module csa #(
     parameter int W = 8,
-    parameter int M = 4,  // Block/chunk size for CSA
+    parameter int M = 4,
     parameter bit PIPE = 0
 ) (
     input  logic         clk,

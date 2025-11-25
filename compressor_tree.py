@@ -238,13 +238,13 @@ class CompressorTreeGenerator:
                 # Process rows 0 through w-2
                 for row in range(self.w - 1):
                     offset = row
-                    
+
                     # Regular bits (LSB through w-2)
                     for bit in range(self.w - 1):
                         pos = offset + bit
                         if pos < self.prod_width:
                             initial_heap.add_bit(pos, f"pp[{row}][{bit}]", "normal")
-                    
+
                     # MSB is inverted
                     msb_pos = offset + self.w - 1
                     if msb_pos < self.prod_width:
@@ -252,7 +252,7 @@ class CompressorTreeGenerator:
                 # Last row (row w-1): b[w-1] is the sign bit
                 last_row = self.w - 1
                 offset = last_row
-                
+
                 # All bits except MSB are inverted
                 for bit in range(self.w - 1):
                     pos = offset + bit
@@ -261,7 +261,7 @@ class CompressorTreeGenerator:
                 msb_pos = offset + self.w - 1
                 if msb_pos < self.prod_width:
                     initial_heap.add_bit(msb_pos, f"pp[{last_row}][{self.w-1}]", "normal")
-                
+
                 # Baugh-Wooley correction bits
                 initial_heap.add_bit(self.w, "1'b1", "normal")  # Correction at position w
                 if 2 * self.w - 1 < self.prod_width:
@@ -273,25 +273,24 @@ class CompressorTreeGenerator:
                 raise ValueError("Unsigned Booth multiplication not supported")
             for pp_idx in range(self.num_pp):
                 offset = pp_idx * 2
+                
+                # Add complement bit (cpl) at LSB for Booth two's complement correction
+                initial_heap.add_bit(offset, f"cpl[{pp_idx}]", "normal")
 
-                # Add regular bits (0 to w-1)
+                # Add regular partial product bits (0 to w-1)
                 for bit in range(self.w):
                     bit_pos = offset + bit
                     if bit_pos < self.prod_width:
                         initial_heap.add_bit(bit_pos, f"pp[{pp_idx}][{bit}]", "normal")
 
-                # Add inverted MSB at position offset + w
-                msb_pos = offset + self.w
-                if msb_pos < self.prod_width:
-                    initial_heap.add_bit(
-                        msb_pos, f"pp[{pp_idx}][{self.w}]", "inverted_msb"
-                    )
-                # Add correction bit (cpl)
-                if msb_pos < self.prod_width:
-                    initial_heap.add_bit(msb_pos, f"cpl[{pp_idx}]", "normal")
-                # Add sign extension bits
-                for ext_pos in range(msb_pos + 1, self.prod_width):
-                    initial_heap.add_bit(ext_pos, f"pp[{pp_idx}][{self.w}]", "normal")
+                # Add INVERTED sign bit (bit w of the w+1 bit PP) at position p
+                sign_bit_pos = offset + self.w
+                if sign_bit_pos < self.prod_width:
+                    initial_heap.add_bit(sign_bit_pos, f"pp[{pp_idx}][{self.w}]", "inverted_msb")
+
+                # Add constant 1s from position p (sign bit) to position q (MSB)
+                for const_pos in range(sign_bit_pos, self.prod_width):
+                    initial_heap.add_bit(const_pos, "1'b1", "correction")
 
         # =================================================================
         # Binary & Booth Logic End

@@ -1,0 +1,12 @@
+python3 data/generate_gpk_data.py  -o data/ -r tb/
+Generated 16 test vectors for gpk
+Files written to data/
+
+Test 0: a=1 b=1 -> g=1 p=0 k=0
+Test 1: a=0 b=1 -> g=0 p=1 k=0
+Test 2: a=0 b=1 -> g=0 p=1 k=0
+Test 3: a=1 b=0 -> g=0 p=1 k=0
+Test 4: a=1 b=0 -> g=0 p=1 k=0
+Header file written to: tb/top.h
+#--clk clk\
+		#

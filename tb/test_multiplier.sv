@@ -22,8 +22,8 @@ module top (
 
   // Load test data
   initial begin
-    $readmemh({`TESTDIR, "a_vals.hex"}, a_vals);
-    $readmemh({`TESTDIR, "b_vals.hex"}, b_vals);
+    $readmemh({`TESTDIR, "x_vals.hex"}, a_vals);
+    $readmemh({`TESTDIR, "y_vals.hex"}, b_vals);
     $readmemh({`TESTDIR, "p_vals.hex"}, expected);
 
     $display("=====================================");
@@ -56,18 +56,16 @@ module top (
   integer tests_run;
   integer pipeline_delay;
 
-  // Calculate pipeline delay based on M and PIPE
+  // Calculate pipeline delay by reading actual stages from DUT
   initial begin
-    pipeline_delay = 0;
-    if (M > 0) pipeline_delay = pipeline_delay + 1;  // PP register stage
-    if (PIPE > 0) begin
-      // Add compressor tree stages (depends on algorithm but typically 3-5)
-      // For simplicity, we'll use a conservative estimate
-      pipeline_delay = pipeline_delay + 5;
-    end
-    if (M > 1) pipeline_delay = pipeline_delay + 1;  // Output register stage
+    // Read actual latency from the DUT (no delay needed for parameters)
+    pipeline_delay = dut.TOTAL_LATENCY;
 
     $display("Calculated pipeline delay: %0d cycles", pipeline_delay);
+    $display("  PP stages: %0d", dut.PP_STAGES);
+    $display("  Compressor stages: %0d", dut.COMPRESSOR_STAGES);
+    if (dut.PREFIX_STAGES > 0) $display("  Prefix tree stages: %0d", dut.PREFIX_STAGES);
+    $display("  Output stages: %0d", dut.OUTPUT_STAGES);
   end
 
   always @(posedge clk) begin

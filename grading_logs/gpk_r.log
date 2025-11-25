@@ -1,0 +1,20 @@
+rm -rf /tmp/Multiplier/sim
+mkdir -p /tmp/Multiplier/sim
+verilator -DTESTDIR=\"/home/omare/Documents/Projects/Multiplier/data/\" -DTOP=top -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -DPIPE=1  \
+	-CFLAGS \
+	-Itb\
+	-Irtl\
+	--cc rtl/gpk.sv rtl/fa.sv rtl/ha.sv rtl/rca.sv\
+	tb/test_gpk.sv \
+	--exe /home/omare/Documents/Projects/Multiplier/tb/test.cpp \
+	-top-module top \
+	--Mdir /tmp/Multiplier/sim
+%Error: tb/test_gpk.sv:35:3: Define or directive not defined: '`TOPNAME'
+   35 |   `TOPNAME #(
+      |   ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=5.038 for more assistance.
+%Error: tb/test_gpk.sv:35:12: syntax error, unexpected '#'
+   35 |   `TOPNAME #(
+      |            ^
+%Error: Exiting due to 2 error(s)
+make: *** [Makefile:56: compile] Error 1

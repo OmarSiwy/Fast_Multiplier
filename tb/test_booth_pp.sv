@@ -1,4 +1,8 @@
 `include "tb/top.h"
+// Generic booth partial product testbench
+`ifndef TOPNAME
+`define TOPNAME booth_pp  // Default
+`endif
 
 /*verilator lint_off DECLFILENAME*/
 module top (
