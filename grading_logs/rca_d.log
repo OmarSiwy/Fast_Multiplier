@@ -1,6 +1,0 @@
-python3 data/generate_adder_data.py --w=32 --m=0  -o data/ -r tb/
-usage: generate_adder_data.py [-h] [-n NUM_TESTS] [-w WIDTH] [-m CHUNK]
-                              [--exhaustive] [-o OUTPUT] [-r HEADER]
-                              [--no-random]
-generate_adder_data.py: error: unrecognized arguments: --m=0
-make: *** [Makefile:49: data] Error 2
