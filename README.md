@@ -1,69 +1,58 @@
-# Lab 2: Deconstruction of an integer multiplier
+# Integer Multiplier Design and Implementation [Part of ECE 493]
 
-Deadline: Nov 15th 2025
+## Project Objectives
 
-## Getting Started
-
-First, clone the git repository onto your home directory on the ECE lab server.
-
-```zsh
-mkdir -p $HOME/ece493t31-f25_arith/labs
-cd $HOME/ece493t31-f25_arith/labs
-git clone ist-git@git.uwaterloo.ca:ece493t31-f25_arith/labs/okelsawy-lab2.git
-cd okelsawy-lab2
-```
-
-## Lab Objectives
-
-The goal of this lab is to do the following tasks.
+The goal of this project is to complete the following tasks:
 
 1. Write parametric Ripple-Carry `rtl/rca.sv`, Carry-Lookahead `rtl/cla.sv`, and
-   Carry-Select adders `rtl/csa.sv` usign `rtl/ha.sv`+`rtl/fa.sv` from Lab1.
-   For carry-lookahead adders, you have to write `rtl/gpk.sv` to produce
-   generate, propagate and kill signals. Evaluate functional correctness.
-   Evaluate ASIC mapping area, delay and power cost. In particular, we are
-   looking for delay distribution of per-bit output delay to ensure the three
+   Carry-Select adders `rtl/csa.sv` using `rtl/ha.sv`+`rtl/fa.sv` from a previous project.
+   For carry-lookahead adders, write `rtl/gpk.sv` to produce
+   generate, propagate and kill signals. Evaluate functional correctness and
+   implementation metrics. In particular, examine the delay distribution of per-bit output delay to ensure the three
    adders are correctly implemented. The most suitable one will become
    `rtl/final_adder.sv` for the last step.
-2. Develop `rtl/binary_pp.sv` and `rtl/booth_pp.sv` for generation of partial
-   products and show functional correctness. Evaluate ASIC mapping area, delay,
-   power cost using TSMC 65nm.
-3. Write `compressor_tree.py` generator to produce compressor tree
-   `rtl/compressor_tree.sv` using `rtl/ha.sv` and `rtl/fa.sv` you developined in
-   Lab1.
 
-   You will have to support the following number formats:
+2. Develop `rtl/binary_pp.sv` and `rtl/booth_pp.sv` for generation of partial
+   products and demonstrate functional correctness. Evaluate implementation
+   characteristics.
+
+3. Write `compressor_tree.py` generator to produce compressor tree
+   `rtl/compressor_tree.sv` using `rtl/ha.sv` and `rtl/fa.sv` developed
+   previously.
+
+   Support the following number formats:
    - unsigned binary
    - signed binary
    - signed modified booth
 
-   You will generate the compressor tree under three schemes:
+   Generate the compressor tree under three schemes:
    - Dadda
    - Bickerstaff
    - FA-only
-     Prove functional correctness of the compressor tree generated RTL. Evaluate
-     ASIC mapping area, delay, power cost using TSMC 65nm.
-     A large part of the code including argument parsing, helper functions, and
-     plotting/visualization/Verilog writers have been provided to you.
+   
+   Prove functional correctness of the generated compressor tree RTL. Evaluate
+   implementation characteristics.
+   A large part of the code including argument parsing, helper functions, and
+   plotting/visualization/Verilog writers have been provided.
 
 4. Develop `rtl/prefix_cell.sv` for creating the generate, propagate, alive signal
    blocks as needed for carry prefix calculations in the final adder stage.
-   Evaluate ASIC mapping area, delay, power cost using TSMC 65nm.
+   Evaluate implementation metrics.
+
 5. Write `prefix_tree.py` to generate parallel prefix trees `rtl/prefix_tree.sv`
    under following schemes:
    - Brent-Kung
-   - Sklanksky
+   - Sklansky
    - Kogge-Stone
-     Show functional correctness. Evaluate ASIC mapping area, delay, power costs
-     using TSMC 65nm.
-     This is mostly blank as it is rather trivial.
+   
+   Show functional correctness and evaluate implementation characteristics.
+   This is mostly blank as it is rather straightforward.
+
 6. Assemble a complete multiplier with four stages `booth_pp.sv|binary_pp.sv` ->
    `compressor_tree.sv` -> `prefix_tree.sv` -> `final_adder.sv` to generate the
-   multiplication result in a configurable way allowing you to explore how each
+   multiplication result in a configurable way allowing exploration of how each
    stage is constructed (e.g. Width W, block size M, number format, tree
-   algorithm, prefix topology, choice of FA/HA cells with static/mirror options
-   if available in TSMC65 or externally supplied as custom cells for those that
-   did exceptional Lab1 layout).
+   algorithm, prefix topology, choice of FA/HA cells).
 
 ```mermaid
 graph TD;
@@ -72,28 +61,27 @@ graph TD;
         prefix_tree-->final_adder;
 ```
 
-7. Make sure all designs are functionally correct. Explore area, delay, power
-   costs in each case and explore effect of pipelining on performance.
-8. A stretch goal worthy of ARITH 2026 paper would be to do a complete
-   transistor-level assembly Python package that customizes all per-bit building
-   blocks FA, HA, GPK, PREFIX_CELL, BOOTH_PP. Each cell is designed, sized, laid out
-   (not all stages can be automated, especially not layout). If you can outperform
-   (or come close to) existing library cells on area/delay/power metrics you
-   have a pathway to a paper that could show others how to design-space explore
-   various options to maximize silicon density.
+7. Make sure all designs are functionally correct. Explore timing, resource usage, and
+   performance characteristics in each case and explore effect of pipelining on performance.
+
+8. A stretch goal would be to do a complete custom implementation that customizes all per-bit building
+   blocks FA, HA, GPK, PREFIX_CELL, BOOTH_PP. Each cell is designed, sized, and optimized
+   for specific performance targets. If you can achieve excellent
+   area/delay/power metrics you have a pathway to a research contribution that could show others how to design-space explore
+   various options to maximize efficiency.
 
 Pre-Requisites:
 
-- `verilog` manual for those unfamiliar. https://git.uwaterloo.ca/ece493t31-f25_arith/manuals/verilog
-- `hw-sim` manual for digital simulations. https://git.uwaterloo.ca/ece493t31-f25_arith/manuals/hw-sim
-- `asic-impl` manual for digital simulations. https://git.uwaterloo.ca/ece493t31-f25_arith/manuals/asic-impl
+- `verilog` manual for those unfamiliar
+- `hw-sim` manual for digital simulations
+- Hardware implementation fundamentals
 
-## Verilog for adders
+## Verilog for Adders
 
-Before you start this section, study different kinds of adders [Dinechin Chapter 5.3].
+Before starting this section, study different kinds of adders (Dinechin Chapter 5.3).
 
-You will write Verilog for your parametric adders in the file `rtl/{rca|csa|cla}.sv`. You will use `rtl/ha.sv` and `rtl/fa.sv` from Lab1.
-You will also have to write Verilog for `rtl/gpk.sv` for per-bit generate,
+Write Verilog for parametric adders in the file `rtl/{rca|csa|cla}.sv`. Use `rtl/ha.sv` and `rtl/fa.sv` from a previous project.
+Also write Verilog for `rtl/gpk.sv` for per-bit generate,
 propagate, and kill bit creation.
 
 The following are the I/O ports of the `rtl/{rca|csa|cla}.sv`:
@@ -116,21 +104,20 @@ The following are the I/O ports of the `rtl/gpk.sv`
 6. `p` : 1-bit propagate signal
 7. `k` : 1-bit kill signal
 
-Note the parameters will vary by module. All adders wil. have width `W` as a
-parameter. For carry-select and carry-lookahaead adder, a parameter `M` will
-determine chunk (or block) size. What's that? Read the textbook. You must
-correctly implement all three variants as the delay from input to each sum bit
+Note the parameters will vary by module. All adders will have width `W` as a
+parameter. For carry-select and carry-lookahead adder, a parameter `M` will
+determine chunk (or block) size. Consult references for details. Correctly implement all three variants as the delay from input to each sum bit
 output will be different for each variant.
 
 The modules also have an optional `PIPE` boolean parameter that chooses between
 combinational(PIPE=0) and pipelined(PIPE=1) variants.
 
-## Verilog for binary and booth partial products
+## Verilog for Binary and Booth Partial Products
 
-Before you start this section, study booth encoding [Dinechin Chapter 8.3, and
-Weste-Harris Chapter 11.9.3].
+Before starting this section, study booth encoding (Dinechin Chapter 8.3, and
+Weste-Harris Chapter 11.9.3).
 
-You will write Verilog for the booth partial product generator as per the
+Write Verilog for the booth partial product generator as per the
 formula $4^iZ_iY$. This generates partial product for the term $Z_i \times Y$ in
 the Modified Booth encoded format.
 
@@ -155,12 +142,12 @@ The following are the I/O ports of the `rtl/booth_pp.sv`:
 The modules have an optional `PIPE` boolean parameter that chooses between
 combinational(PIPE=0) and pipelined(PIPE=1) variants.
 
-## Verilog for generate/propagate/alive cells
+## Verilog for Generate/Propagate/Alive Cells
 
-Before you start this section, study fast adders [Dinechin Chapter 5.3].
+Before starting this section, study fast adders (Dinechin Chapter 5.3).
 
-You will also write Verilog for the prefix cell for fast carry generation.
-Recall, this is simply combining generate, propagate, alive bits from `hi` and
+Write Verilog for the prefix cell for fast carry generation.
+This combines generate, propagate, alive bits from `hi` and
 `lo` ranges.
 
 The following are the I/O ports of the `rtl/prefix_cell.sv`:
@@ -177,10 +164,10 @@ combinational(PIPE=0) and pipelined(PIPE=1) variants.
 
 ### Verilog Simulation
 
-Once you've implemented the Verilog for the cells, you can simulate them exhaustively or selectively.
+Once the Verilog for the cells is implemented, simulate them exhaustively or selectively.
 Check command-line options of the `generate_*.py` code.
 
-```
+```bash
 python3 data/generate_gpk_data.py -o data/ -r tb/
 make run DUT=gpk PIPE={0|1}
 python3 data/generate_adder_data.py -w {8|16|32} -m 0 -o data/ -r tb/
@@ -191,39 +178,22 @@ python3 data/generate_{binary_pp|booth_pp|prefix_cell}_data -w {8|16|32} -o data
 make run DUT={binary_pp|booth_pp|prefix_cell} PIPE={0|1}
 ```
 
-Caution: For signed arithmetic handling in RCA, use M==0 to enable it. For all
+**Caution**: For signed arithmetic handling in RCA, use M==0 to enable it. For all
 other values of M (when instantiated in CSA) please use unsigned mode only.
-You'll handle signed arithmetic in the outer module. Pay attention to `-m 0` flag
+Handle signed arithmetic in the outer module. Pay attention to `-m 0` flag
 being passed to `generate_adder.py` when testing RCA stand-alone.
 
 The testbenches rely on test parameters in `tb/top.h` that is auto-generated by
-the Python _generate_ code. Do not muck this up unless there's a bug.
+the Python _generate_ code. Do not modify this unless there's a bug.
 
 The Verilator test bench will report correctness and failed tests.
 
-### ASIC mapping
+## Python Generators for `rtl/compressor_tree.sv`
 
-Once you've tested the Verilog for the cells, you can map them to ASICs.
-For ASIC mapping, we have to start the container
+Before starting this section, study compressor tree (Dinechin Chapter 7 and 7.3
+in particular, and Chapter 11.9 from Weste-Harris).
 
-```
-sudo --preserve-env=SSH_AUTH_SOCK /usr/local/bin/student-container-start.sh
-cd ece493t31-f25/labs/okelsawy-lab2
-source env.csh
-make asic DUT=gpk W=0 M=0 PIPE={0|1}
-make asic DUT=rca W={8|16|32} M=0 PIPE={0|1}
-make asic DUT={csa|cla} W={8|16|32} M={2|4|8|16} PIPE={0|1}
-make asic DUT={booth_pp|binary_pp|prefix_cell} W=0 M=0 PIPE={0|1}
-```
-
-The Verilator test bench will report correctness and failed tests.
-
-## Python generators for `rtl/compressor_tree.sv`
-
-Before you start this section, study compressor tree [Dinechin Chapter 7 and 7.3
-in particular, and Chapter 11.9 from Weste-Harris].
-
-You have to modify a parametric generator for compressor tree that takes in a
+Modify a parametric generator for compressor tree that takes in a
 variety of options! The key objective is to implement signed binary, and signed
 Booth multipliers. Sign extensions must be done with the Baugh-Wooley inverted
 MSB trick.
@@ -231,21 +201,20 @@ MSB trick.
 For instance, the following command will generate a compressor tree for an 8x8
 unsigned multiplication with binary encoding using Dadda's algorithm.
 
-```
+```bash
 python3 compressor_tree.py -w 4 --encoding=binary --unsigned -s --visualize --algorithm=faonly -o rtl/compressor_tree.sv # Fig 7.6 + 7.7 in Dinechin/Kumm book
 python3 compressor_tree.py -w 8 --encoding=binary --unsigned -s --visualize --algorithm=dadda -o rtl/compressor_tree.sv # Fig 7.19 in Dinechin/Kumm book
 python3 compressor_tree.py -w 8 --encoding=binary --unsigned -s --visualize --algorithm=bickerstaff -o rtl/compressor_tree.sv # Fig 7.20 in Dinechin/Kumm book
 ```
 
-The `--visualize` option will show you a dot diagram using code I've already
-supplied to you.
+The `--visualize` option will show a dot diagram using supplied code.
 
 - Here is the raw ANSI-colored chart: [bitheap.txt](./bitheap.txt) (cat
-  bitheap.txt on the terminal will show pretty colors for FAs and HAs you can
-  cross-refernce with the textbook)
+  bitheap.txt on the terminal will show pretty colors for FAs and HAs for
+  cross-reference with textbooks)
 - Here is the HTML version: [bitheap.html](./bitheap.html)
 
-Some dot diagrams to admire..
+Some dot diagrams to review:
 
 - Golden reference for 4x4 unsigned FAONLY: [Fig 7.6](./fig7.6.txt)
 - Golden reference for 8x8 unsigned Dadda: [Fig 7.19](./fig7.19.txt)
@@ -255,194 +224,141 @@ The three compressor tree generators are tested to be correct for unsigned
 arithmetic under various combinations of width!
 
 The generated FA/HA circuit is also saved as `graph.dot` which can be viewed as
-follows to create a PDF file you can open with any viewer:
+follows to create a PDF file:
 
-```
+```bash
 dot -Tpdf graph.dot -o graph.pdf
 ```
 
-You can compare this netlist view to the textbook chapter diagrams (particularly
+Compare this netlist view to textbook chapter diagrams (particularly
 Fig 7.7 for 4x4b unsigned multiplication with FA-only)
 
-Once the RTL is generated, we have to test this for correctness. We first
+Once the RTL is generated, test it for correctness. First
 generate synthetic data with partial products as inputs and the sum + carry
 vectors as output. This is done by `data/generate_compressor_tree_data.py` file.
-The important thing to note is that the exact assignment of results bits to
+The important thing to note is that the exact assignment of result bits to
 sum|carry does not matter as the final sum is `sum+carry` and is done in the
 fast adder later. This is checked in the RTL testbench with the
 `make run` command.
 
-Thus, a minimal 3-step tango to run the compressor tree generator is shown
+Thus, a minimal 3-step process to run the compressor tree generator is shown
 below:
 
-```
-python3 data/generate_compressor_tree_data.py -w 8 -e binary --unsigned -o data/
--r tb/
+```bash
+python3 data/generate_compressor_tree_data.py -w 8 -e binary --unsigned -o data/ -r tb/
 python3 compressor_tree.py -w 8 --encoding=binary --unsigned -s --visualize --algorithm=dadda -o rtl/compressor_tree.sv -r tb/ # Fig 7.19 in Dinechin/Kumm book
--r tb/
 make run DUT=compressor_tree PIPE=0
 ```
 
-For ASIC mapping, we have to start the container
-
-```
-sudo --preserve-env=SSH_AUTH_SOCK /usr/local/bin/student-container-start.sh
-cd ece493t31-f25/labs/okelsawy-lab2
-make asic DUT=compressor_tree PIPE=0
-```
-
 The task is to generate the compressor trees under following matrix of
-possibilities with a grade breakdown for this portion.
+possibilities:
 
-1. 50% **Encoding**: Binary, Modified Booth (Radix-4), higher radices are possible as a
-   bonus if you have no life. You have to add support for Booth!
-2. 25% **Sign**: Unsigned, Signed. You must support both types! You have to add
+1. **Encoding**: Binary, Modified Booth (Radix-4), higher radices are possible as a
+   bonus. Add support for Booth!
+2. **Sign**: Unsigned, Signed. Must support both types! Add
    support for Signed.
-3. 15% **Pipelining**: Add an option to introduce a flexible degree of pipelining. At a minimum add
+3. **Pipelining**: Add an option to introduce a flexible degree of pipelining. At minimum add
    a pipeline stage after each level of the tree when PIPE=1. Less aggressive
-   pipelining options welcome if we can standardize notation for autograding.
-   This is entirely new feature.
-4. 10% **Width**: The data width of the operands should be flexible from 4->64 and
+   pipelining options welcome if standardized notation can be established.
+   This is an entirely new feature.
+4. **Width**: The data width of the operands should be flexible from 4->64 and
    keep it symmetric for both operands. Vary width and test functional
    correctness.
 
-How do solve this portion of the lab:
+How to solve this portion:
 
-[Ignore all following steps, You can just write it yourself if you're a pro.]
+[You can implement it directly if you're experienced.]
 
-1. Subscribe to Claude Pro as a student for free.
-2. Setup an agentic loop that creates a query that wraps the
+1. Consider using AI assistance tools to help with development.
+2. Setup an iterative development loop that creates queries wrapping the
    compressor_tree.py's Python output + Verilog simulation output as part of
-   your agentic query loop. Read the famous
+   your development cycle. Reference the
    [KernelBench](https://arxiv.org/abs/2502.10517) paper and
-   [github](https://github.com/ScalingIntelligence/KernelBench)! You can also do
-   it manually by copy-pasting like a pleb.
+   [github](https://github.com/ScalingIntelligence/KernelBench) for methodologies.
 3. Since you have the golden reference results from the testbench, you can
    systematically test the FA/HA generation logic + Verilog generation logic
    separately.
-4. Attach the agent's entire interaction in `agents` folder. I want to see the
-   entire query sequence.
+4. Document the development process in an `agents` folder for reference.
 
-You start with a set of basic building blocks `compressor_tree.py`,
+You start with a set of basic building blocks: `compressor_tree.py`,
 `visualize_heap.py`, and `gen_{verilog|graphviz}.py` files.
 
-## Python generators for `rtl/prefix_tree.sv`
+## Python Generators for `rtl/prefix_tree.sv`
 
-Before you start this section, study prefix trees [Dinechin Chapter 5.3,
-Weste-Harris Chapter 11.2].
+Before starting this section, study prefix trees (Dinechin Chapter 5.3,
+Weste-Harris Chapter 11.2).
 
-You have to design a parametric generator for the prefix tree that takes in a
+Design a parametric generator for the prefix tree that takes in a
 variety of options!
 
 For instance, the following command will generate a prefix tree for 16 inputs
 using Kogge-Stone.
 
-```
-python3 prefix_tree.py -w 8 --technique=sklansky --graphviz --verilog -o rtl/prefix_tree.sv# Fig 5.18 in Dinechin/Kumm book
+```bash
+python3 prefix_tree.py -w 8 --technique=sklansky --graphviz --verilog -o rtl/prefix_tree.sv # Fig 5.18 in Dinechin/Kumm book
 python3 prefix_tree.py -w 8 --technique=kogge-stone --graphviz --verilog -o rtl/prefix_tree.sv # Fig 5.19 in Dinechin/Kumm book
 ```
 
 The file is empty and will need to be built from scratch unlike
-`compressor_tree.py` lazy bums!
+`compressor_tree.py`.
 
-The task is to generate the compressor trees under following matrix of
-possibilities and grade breakdown for this component shown below.
+The task is to generate the prefix trees under following matrix of
+possibilities:
 
-1. 50% **Algorithm**: You will implement Sklansky, Kogge-Stone, Brent-Kung topologies from
-   Dinechin/Kumm book. The Weste-Harris book have more alternatives like Ling,
+1. **Algorithm**: Implement Sklansky, Kogge-Stone, Brent-Kung topologies from
+   Dinechin/Kumm book. The Weste-Harris book has more alternatives like Ling,
    Han-Carlson adders but they do not seem popular these days and do not have to
-   be supported. Only Damir-class battleship commanders can handle this kindaa
-   heat.
-2. 25% **Pipelining**: Add an option to introduce a flexible degree of pipelining. At a minimum add
+   be supported.
+2. **Pipelining**: Add an option to introduce a flexible degree of pipelining. At minimum add
    a pipeline stage after each level of the tree when PIPE=1. Less aggressive
-   pipelining options welcome if we can standardize notation for autograding.
-3. 25% **Width**: It should be flexible from 4->256. Wider precision is needed in the final
+   pipelining options welcome if standardized notation can be established.
+3. **Width**: Should be flexible from 4->256. Wider precision is needed in the final
    adder as the compressor tree produces quadratic number of columns for
    summation!
 
-You will have to write `data/generate_prefix_tree_data.py` in the same vein as
+Write `data/generate_prefix_tree_data.py` in the same manner as
 other synthetic data generators.
 
-You will also have to write `tb/test_prefix_tree.sv` to check prefix-tree outputs
-in the same vein as other test benches I have supplied.
+Also write `tb/test_prefix_tree.sv` to check prefix-tree outputs
+in the same manner as other test benches supplied.
 
-Thus, a minimal 3-step tango to run the prefix tree generator is shown
+Thus, a minimal 3-step process to run the prefix tree generator is shown
 below:
 
-```
+```bash
 python3 data/generate_prefix_tree_data.py -w 8 -o data/ -r tb/
-python3 prefix_tree.py -w 8 --technique=sklansky --visualize -o rtl/prefix_tree.sv # Fig 5.18 in Dinechin/Kumm book
--r tb/
+python3 prefix_tree.py -w 8 --technique=sklansky --visualize -o rtl/prefix_tree.sv -r tb/ # Fig 5.18 in Dinechin/Kumm book
 make run DUT=prefix_tree PIPE=0
-```
-
-For ASIC mapping, we have to start the container
-
-```
-sudo --preserve-env=SSH_AUTH_SOCK /usr/local/bin/student-container-start.sh
-cd ece493t31-f25/labs/okelsawy-lab2
-make asic DUT=prefix_tree PIPE=0
 ```
 
 ## Final Multiplier Assembly `multiplier.sv`
 
-You will have to generate`rtl/multiplier.sv`. You can do this with a
-`multiplier.sh` script which you have to write. This will call all the other
-generators in a parametric manner. The generator parameters pick
+Generate `rtl/multiplier.sv`. Do this with a
+`multiplier.sh` script which you must write. This will call all the other
+generators in a parametric manner. The generator parameters pick:
 
 - width (w)
 - encoding (binary|booth)
-- compressor tree (dadda|bickerstaff|fanoly)
-- prefix tree (kogge-stone|brent-kung|sklanksy)
+- compressor tree (dadda|bickerstaff|faonly)
+- prefix tree (kogge-stone|brent-kung|sklansky)
 - final adder (just bitwise xor to generate final sum)
-- pipelining (int) You will also add pipelining options and explore
-  various pipelining strategies. Go crazy here! Feel free to pipeline the partial
+- pipelining (int) - Add pipelining options and explore
+  various pipelining strategies. Feel free to pipeline the partial
   product outputs, internals of the compressor tree, prefix tree, final adder, etc
   as you deem fit!
 
-This will be tested by calling
+This will be tested by calling:
 
-```
-./multiplier.sh W=<> ENCODING=<> COMPRESSOR_ALGORITHM=<>
-PREFIX_ALGORITHM=<> FINAL_ADDER=<> M=<> PIPE=<>
+```bash
+./multiplier.sh W=<> ENCODING=<> COMPRESSOR_ALGORITHM=<> PREFIX_ALGORITHM=<> FINAL_ADDER=<> M=<> PIPE=<>
 make run DUT=multiplier
-sudo --preserve-env=SSH_AUTH_SOCK /usr/local/bin/student-container-start.sh
-cd ece493t31-f25/labs/okelsawy-lab2
-make asic DUT=multiplier PIPE=0
 ```
 
 This will generate `rtl/multiplier.sv` and ensure that `rtl/compressor_tree.sv`
 and `rtl/prefix_tree.sv` are generated to match this module.
 
-You will have to write `data/generate_multipler_data.py` in the same vein as
+Write `data/generate_multiplier_data.py` in the same manner as
 other synthetic data generators.
 
-You will also have to write `tb/test_multiplier.sv` to check multiplier outputs
-in the same vein as other test benches I have supplied.
-
-## Grading Breakdown
-
-- 25% of the grade for rca|csa|cla|booth_pp|prefix_cell block RTL correctness
-- 10% of the grade for rca|csa|cla|booth_pp|prefix_cell block ASIC backend area/delay distribution correctness (within a reasonable margin)
-- 40% of the grade for modification to compressor_tree.py (RTL correctness + ASIC backend both checked)
-- 10% of the grade for prefix_tree.py (RTL correctness + ASIC backend both checked)
-- 5% of the grade for assembling `multiplier.sv` built from all previous components. (Both RTL and ASIC backend will be checked)
-
-## Submission
-
-Finally, to run all tests and view your final grade, run `./grade.sh`. The grade
-will be calculated and stored in `grade.csv`. The grade you see will be the
-autograder output as well.
-
-To submit your code please run the following.
-
-```zsh
-$ git add agents/*
-$ git add multiplier.sh data/generate_multiplier_data.py tb/test_multiplier.sv
-$ git add compressor_tree.py prefix_tree.py data/generate_prefix_tree_data.py
-tb/test_prefix_tree.sv
-$ git add rtl/ha.sv rtl/fa.sv rtl/rca.sv rtl/csa.sv rtl/cla.sv rtl/gpk.sv
-rtl/booth_pp.sv rtl/prefix_cell.sv
-$ git commit -a -m 'the content of this message does not matter'
-$ git push origin master
-```
+Also write `tb/test_multiplier.sv` to check multiplier outputs
+in the same manner as other test benches supplied.
