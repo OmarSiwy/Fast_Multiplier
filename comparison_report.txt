@@ -1,0 +1,34 @@
+Multiplier Comparison Report
+============================
+Width: 16 bits
+Product Width: 32 bits
+Date: Sun Nov 30 10:08:18 PM EST 2025
+
+=== Yosys Built-in Multiplier (Baseline) ===
+This uses the Verilog * operator, which Yosys synthesizes
+using its internal algorithms.
+
+Type                      | Cells      | LTP       
+--------------------------+------------+-----------
+Signed 16x16              | 1754       | 34        
+Unsigned 16x16            | 1534       | 34        
+
+=== Final Adder Options (32 bits) ===
+Adder Type                | Cells      | LTP       
+--------------------------+------------+-----------
+RCA (Ripple-Carry)        | 224        | 97        
+CLA (Carry-Lookahead)     | 336        | 22        
+CSA (Carry-Select)        | 456        | 21        
+
+=== Prefix Tree Options (32 bits) ===
+Algorithm                 | Cells      | LTP       
+--------------------------+------------+-----------
+kogge-stone               | 800        | 10        
+brent-kung                | 1440       | 17        
+sklansky                  | 800        | 10        
+
+=== Partial Product Generation ===
+Encoding                  | Cells/PP   | Total PPs      
+--------------------------+------------+----------------
+Binary (radix-2)          | 16         | 16             
+Booth (radix-4)           | 90         | 8              
